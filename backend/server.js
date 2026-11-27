@@ -8,7 +8,7 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 
-import { PrismaClient } from "./generated/prisma/client.js";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import courseRoutes from "./src/routes/course.routes.js";
 
