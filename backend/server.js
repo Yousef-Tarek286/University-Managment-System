@@ -1,124 +1,104 @@
 
-require("dotenv").config();
+import express from "express";
+import cors from "cors";
+import "dotenv/config";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
-const express = require("express");
-const cors = require("cors");
-const multer = require("multer");
-const { randomUUID } = require("crypto");
-const prisma = require("./src/prisma");
-const supabase = require("./src/supabase");
+import { PrismaClient } from "./generated/prisma/client.js";
+import { PrismaPg } from "@prisma/adapter-pg";
+import courseRoutes from "./src/routes/course.routes.js";
 
-const app = express();
-const PORT = 3000;
-
-// File upload configuration
-const storage = multer.memoryStorage();
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50 MB
-  },
-  fileFilter: (req, file, callback) => {
-    const allowedTypes = [
-      "application/pdf",
-      "application/vnd.ms-powerpoint",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    ];
-
-    if (allowedTypes.includes(file.mimetype)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Only PDF and PowerPoint files are allowed!"));
-    }
-  },
+// Initialize Prisma
+const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL,
 });
 
+const prisma = new PrismaClient({ adapter });
+
+// Initialize Express
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
 // Home route
 app.get("/", (req, res) => {
-  res.send("Backend server is running!");
+    res.send("Backend server is running!");
 });
 
-// Test database connection
-app.get("/db-test", async (req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.send("Database connected successfully!");
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Database connection failed!");
-  }
-});
+// Login route
+app.post("/api/auth/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
 
-// Test Supabase connection
-app.get("/storage-test", async (req, res) => {
-  try {
-    const { data, error } = await supabase.storage.listBuckets();
+        if (!email || !password) {
+            return res.status(400).json({
+                message: "Email and password are required",
+            });
+        }
 
-    if (error) {
-      throw error;
+        const user = await prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (!user || !user.isActive) {
+            return res.status(401).json({
+                message: "Invalid email or password",
+            });
+        }
+
+        const passwordMatches = await bcrypt.compare(
+            password,
+            user.passwordHash
+        );
+
+        if (!passwordMatches) {
+            return res.status(401).json({
+                message: "Invalid email or password",
+            });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                fullName: user.fullName,
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: "1d",
+            }
+        );
+
+        return res.status(200).json({
+            message: `Welcome ${user.fullName}`,
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                fullName: user.fullName,
+            },
+        });
+
+    } catch (error) {
+        console.error("Login error:", error);
+
+        return res.status(500).json({
+            message: "Internal server error",
+        });
     }
-
-    res.json({
-      message: "Supabase connected successfully!",
-      buckets: data.map((bucket) => bucket.name),
-    });
-  } catch (error) {
-    console.error("Supabase error:", error);
-
-    res.status(500).json({
-      message: "Supabase connection failed!",
-      error: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code,
-    });
-  }
 });
 
-// Upload file to Supabase Storage
-app.post("/upload", upload.single("file"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        message: "Please select a file to upload.",
-      });
-    }
-
-    const fileName = `${randomUUID()}-${req.file.originalname}`;
-
-    const { data, error } = await supabase.storage
-      .from("materials")
-      .upload(fileName, req.file.buffer, {
-        contentType: req.file.mimetype,
-        upsert: false,
-      });
-
-    if (error) {
-      throw error;
-    }
-
-    res.status(201).json({
-      message: "File uploaded successfully!",
-      fileName: req.file.originalname,
-      filePath: data.path,
-      fileSize: req.file.size,
-      fileType: req.file.mimetype,
-    });
-  } catch (error) {
-    console.error("Upload error:", error);
-
-    res.status(500).json({
-      message: "File upload failed!",
-      error: error.message,
-    });
-  }
-});
+// Course routes
+app.use("/api/courses", courseRoutes);
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Backend running at http://localhost:${PORT}`);
+    console.log(`Backend running at http://localhost:${PORT}`);
 });
