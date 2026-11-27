@@ -1,0 +1,37 @@
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+/* Primary button - Blue */
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+}
+
+/* Secondary button - Gray */
+.btn-secondary {
+  background-color: #64748b;
+  color: white;
+}
+
+/* Danger button - Red */
+.btn-danger {
+  background-color: #dc2626;
+  color: white;
+}
+
+/* When the mouse is over a button */
+.btn:hover {
+  opacity: 0.85;
+}
+
+/* When the button is disabled */
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
