@@ -5,7 +5,7 @@
 // as well as unexpected server/database errors safely.
 // =================================================================
 
-const AppError = require("../utils/AppError");
+import AppError from "../utils/AppError.js";
 
 const errorHandler = (err, _req, res, _next) => {
   if (err instanceof AppError) {
@@ -22,4 +22,4 @@ const errorHandler = (err, _req, res, _next) => {
   });
 };
 
-module.exports = errorHandler;
+export default errorHandler;

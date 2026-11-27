@@ -8,8 +8,8 @@
 //     student is not already enrolled, and seats are available.
 // =================================================================
 
-const prisma = require("../config/prisma");
-const AppError = require("../utils/AppError");
+import prisma from "../config/prisma.js";
+import AppError from "../utils/AppError.js";
 
 /**
  * Registers an authenticated, active student in a course.
@@ -251,8 +251,4 @@ const dropCourse = async ({ enrollmentId, studentId }) => {
   return updated;
 };
 
-module.exports = {
-  registerForCourse,
-  getMyCourses,
-  dropCourse,
-};
+export { registerForCourse, getMyCourses, dropCourse };

@@ -2,7 +2,7 @@
 // controllers/enrollment.controller.js — HTTP Handlers for Enrollment
 // =================================================================
 
-const enrollmentService = require("../services/enrollment.service");
+import * as enrollmentService from "../services/enrollment.service.js";
 
 /**
  * POST /api/enrollments
@@ -62,8 +62,4 @@ const dropCourse = async (req, res, next) => {
   }
 };
 
-module.exports = {
-  register,
-  getMyCourses,
-  dropCourse,
-};
+export { register, getMyCourses, dropCourse };

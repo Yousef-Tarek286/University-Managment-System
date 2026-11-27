@@ -5,7 +5,7 @@
 // and send a consistent JSON response back to the frontend.
 // =================================================================
 
-const courseService = require("../services/course.service");
+import courseService from "../services/course.service.js";
 
 /**
  * GET /api/courses?search=...&semesterId=...
@@ -39,6 +39,7 @@ const getCourses = async (req, res) => {
 const getSemesters = async (_req, res) => {
   try {
     const semesters = await courseService.getSemesters();
+
     return res.status(200).json({
       success: true,
       message: "Semesters retrieved successfully",
@@ -53,8 +54,7 @@ const getSemesters = async (_req, res) => {
   }
 };
 
-module.exports = {
+export default {
   getCourses,
   getSemesters,
 };
-

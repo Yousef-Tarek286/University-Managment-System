@@ -7,8 +7,8 @@
 //   - Enforces role-based access independently of the frontend.
 // =================================================================
 
-const jwt = require("jsonwebtoken");
-const prisma = require("../config/prisma");
+import jwt from "jsonwebtoken";
+import prisma from "../config/prisma.js";
 
 const JWT_SECRET =
   process.env.JWT_SECRET || "university_super_secret_jwt_key_2026";
@@ -104,7 +104,4 @@ const authorizeRole = (...allowedRoles) => {
   };
 };
 
-module.exports = {
-  authenticateToken,
-  authorizeRole,
-};
+export { authenticateToken, authorizeRole };

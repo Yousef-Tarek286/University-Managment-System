@@ -5,12 +5,12 @@
 // All endpoints require an authenticated, active STUDENT.
 // =================================================================
 
-const express = require("express");
-const enrollmentController = require("../controllers/enrollment.controller");
-const {
+import express from "express";
+import * as enrollmentController from "../controllers/enrollment.controller.js";
+import {
   authenticateToken,
   authorizeRole,
-} = require("../middleware/auth.middleware");
+} from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -26,4 +26,4 @@ router.post("/", enrollmentController.register);
 // DELETE /api/enrollments/:id — drop an active enrollment
 router.delete("/:id", enrollmentController.dropCourse);
 
-module.exports = router;
+export default router;
