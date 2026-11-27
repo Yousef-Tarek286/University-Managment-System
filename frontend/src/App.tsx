@@ -1,6 +1,7 @@
 import Button from "./components/layout/common/Button";
 import MainLayout from "./components/layout/MainLayout";
 import Card from "./components/layout/common/Card";
+import LoadingSpinner from "./components/layout/common/LoadingSpinner";
 function App() {
   return (
     <MainLayout role="STUDENT" username="Mohamed">
@@ -22,6 +23,7 @@ function App() {
     <h2 style={{ color: "#ff0000" }}>2 New</h2>
     <p>You have 2 new course announcements.</p>
   </Card>
+  <LoadingSpinner message="Loading your courses..." />
 
 </div>
 
