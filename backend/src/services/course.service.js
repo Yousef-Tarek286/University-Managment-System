@@ -82,8 +82,59 @@ const getSemesters = async () => {
   });
 };
 
+const getCourseById = async (courseId) => {
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      doctor: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
+      semester: {
+        select: {
+          id: true,
+          name: true,
+          isActive: true,
+          registrationOpen: true,
+        },
+      },
+      _count: {
+        select: {
+          enrollments: {
+            where: { status: "ENROLLED" },
+          },
+        },
+      },
+    },
+  });
+
+  if (!course) {
+    return null;
+  }
+
+  return {
+    id: course.id,
+    courseName: course.courseName,
+    courseCode: course.courseCode,
+    description: course.description,
+    capacity: course.capacity,
+    enrolledCount: course._count.enrollments,
+    remainingSeats: Math.max(
+      0,
+      course.capacity - course._count.enrollments
+    ),
+    status: course.status,
+    doctor: course.doctor,
+    semester: course.semester,
+  };
+};
+
 export default {
   getAvailableCourses,
   getSemesters,
+  getCourseById,
 };
 

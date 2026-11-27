@@ -1,246 +1,91 @@
-
 import express from "express";
 import cors from "cors";
 import "dotenv/config";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import multer from "multer";
-import fs from "fs";
-import path from "path";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SECRET_KEY,
-    {
-        auth: {
-            persistSession: false,
-            autoRefreshToken: false,
-        },
-    }
-);
-
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import prisma from "./src/config/prisma.js";
 import courseRoutes from "./src/routes/course.routes.js";
-
-// Initialize Prisma
-const adapter = new PrismaPg({
-    connectionString: process.env.DATABASE_URL,
-});
-
-const prisma = new PrismaClient({ adapter });
+import materialRoutes from "./src/routes/material.routes.js";
 
 // Initialize Express
 const app = express();
 const PORT = process.env.PORT || 3000;
+const JWT_SECRET =
+  process.env.JWT_SECRET || "university_super_secret_jwt_key_2026";
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
 // Home route
-app.get("/", (req, res) => {
-    res.send("Backend server is running!");
+app.get("/", (_req, res) => {
+  res.send("Backend server is running!");
 });
 
 // Login route
 app.post("/api/auth/login", async (req, res) => {
-    try {
-        const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({
-                message: "Email and password are required",
-            });
-        }
-
-        const user = await prisma.user.findUnique({
-            where: { email },
-        });
-
-        if (!user || !user.isActive) {
-            return res.status(401).json({
-                message: "Invalid email or password",
-            });
-        }
-
-        const passwordMatches = await bcrypt.compare(
-            password,
-            user.passwordHash
-        );
-
-        if (!passwordMatches) {
-            return res.status(401).json({
-                message: "Invalid email or password",
-            });
-        }
-
-        // Generate JWT token
-        const token = jwt.sign(
-            {
-                id: user.id,
-                email: user.email,
-                role: user.role,
-                fullName: user.fullName,
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: "1d",
-            }
-        );
-
-        return res.status(200).json({
-            message: `Welcome ${user.fullName}`,
-            token,
-            user: {
-                id: user.id,
-                email: user.email,
-                role: user.role,
-                fullName: user.fullName,
-            },
-        });
-
-    } catch (error) {
-        console.error("Login error:", error);
-
-        return res.status(500).json({
-            message: "Internal server error",
-        });
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
     }
-});
 
-// Course routes
-app.use("/api/courses", courseRoutes);
-
-// File upload setup
-const uploadDir = path.resolve("uploads");
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
-});
-
-const upload = multer({ storage });
-const memoryUpload = multer({ storage: multer.memoryStorage() });
-
-app.post("/upload", upload.single("file"), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-    }
-    return res.status(200).json({
-        message: "File uploaded successfully!",
-        filename: req.file.filename,
-        originalName: req.file.originalname,
-        size: req.file.size,
+    const user = await prisma.user.findUnique({
+      where: { email },
     });
-});
-// 1. Upload a material to a course (Supabase Storage)
-app.post("/api/courses/:id/materials", memoryUpload.single("file"), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: "No file uploaded" });
-        }
 
-        const courseId = Number(req.params.id);
-        const { title, description, uploadedById } = req.body;
-        const storagePath = `courses/${courseId}/${Date.now()}-${req.file.originalname}`;
-
-        const { error: uploadError } = await supabase.storage
-            .from("materials")
-            .upload(storagePath, req.file.buffer, {
-                contentType: req.file.mimetype,
-            });
-
-        if (uploadError) {
-            console.error("Supabase upload error:", uploadError);
-            return res.status(500).json({ error: uploadError.message });
-        }
-
-        const material = await prisma.courseMaterial.create({
-            data: {
-                title: title || req.file.originalname,
-                description: description || null,
-                fileName: req.file.originalname,
-                filePath: storagePath,
-                fileType: req.file.mimetype,
-                fileSize: req.file.size,
-                courseId,
-                uploadedById: Number(uploadedById) || 1,
-            },
-        });
-
-        return res.status(201).json(material);
-    } catch (error) {
-        console.error("Upload material error:", error);
-        return res.status(500).json({ error: "Failed to upload material" });
+    if (!user || !user.isActive) {
+      return res.status(401).json({
+        message: "Invalid email or password",
+      });
     }
-});
 
-// 2. Get all materials for a course
-app.get("/api/courses/:id/materials", async (req, res) => {
-    try {
-        const courseId = Number(req.params.id);
-        const materials = await prisma.courseMaterial.findMany({
-            where: { courseId },
-            orderBy: { createdAt: "desc" },
-        });
-        return res.status(200).json(materials);
-    } catch (error) {
-        console.error("Get materials error:", error);
-        return res.status(500).json({ error: "Failed to fetch materials" });
+    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+
+    if (!passwordMatches) {
+      return res.status(401).json({
+        message: "Invalid email or password",
+      });
     }
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        fullName: user.fullName,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "1d",
+      }
+    );
+
+    return res.status(200).json({
+      message: `Welcome ${user.fullName}`,
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        fullName: user.fullName,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
 });
 
-// 3. Download a material by ID
-app.get("/api/materials/:id/download", async (req, res) => {
-    try {
-        const id = Number(req.params.id);
-        const material = await prisma.courseMaterial.findUnique({ where: { id } });
-
-        if (!material) {
-            return res.status(404).json({ error: "Material not found" });
-        }
-
-        const { data, error } = await supabase.storage
-            .from("materials")
-            .createSignedUrl(material.filePath, 60, {
-                download: material.fileName,
-            });
-
-        if (error || !data?.signedUrl) {
-            return res.status(500).json({ error: "Failed to generate download link" });
-        }
-
-        return res.redirect(data.signedUrl);
-    } catch (error) {
-        console.error("Download material error:", error);
-        return res.status(500).json({ error: "Failed to download material" });
-    }
-});
-
-// 4. Delete a material by ID
-app.delete("/api/materials/:id", async (req, res) => {
-    try {
-        const id = Number(req.params.id);
-        const material = await prisma.courseMaterial.findUnique({ where: { id } });
-
-        if (!material) {
-            return res.status(404).json({ error: "Material not found" });
-        }
-
-        await supabase.storage.from("materials").remove([material.filePath]);
-        await prisma.courseMaterial.delete({ where: { id } });
-
-        return res.status(200).json({ message: "Material deleted" });
-    } catch (error) {
-        console.error("Delete material error:", error);
-        return res.status(500).json({ error: "Failed to delete material" });
-    }
-});
+// Course & Material routes
+app.use("/api/courses", courseRoutes);
+app.use("/api", materialRoutes);
 
 // 1. Create an announcement (course-specific or system-wide)
 app.post("/api/announcements", async (req, res) => {
@@ -307,5 +152,5 @@ app.get("/api/announcements/feed", async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`Backend running at http://localhost:${PORT}`);
+  console.log(`Backend running at http://localhost:${PORT}`);
 });
