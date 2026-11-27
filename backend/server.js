@@ -4,8 +4,11 @@ import cors from "cors";
 import "dotenv/config";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
 
-import { PrismaClient } from "./generated/prisma/client.js";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import courseRoutes from "./src/routes/course.routes.js";
 
@@ -97,6 +100,31 @@ app.post("/api/auth/login", async (req, res) => {
 
 // Course routes
 app.use("/api/courses", courseRoutes);
+
+// File upload setup
+const uploadDir = path.resolve("uploads");
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+});
+
+const upload = multer({ storage });
+
+app.post("/upload", upload.single("file"), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+    }
+    return res.status(200).json({
+        message: "File uploaded successfully!",
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+    });
+});
 
 // Start server
 app.listen(PORT, () => {
