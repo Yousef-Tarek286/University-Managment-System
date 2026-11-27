@@ -1,12 +1,15 @@
-
 import { useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { LoginPage } from "./pages/LoginPage";
+import { AvailableCoursesPage } from "./pages/AvailableCoursesPage";
 import Modal from "./components/layout/common/Modal";
 import Button from "./components/layout/common/Button";
 import MainLayout from "./components/layout/MainLayout";
 import Card from "./components/layout/common/Card";
 import LoadingSpinner from "./components/layout/common/LoadingSpinner";
 
-function App() {
+function SharedLayoutDemo() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -211,6 +214,20 @@ function App() {
         </div>
       </Modal>
     </MainLayout>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<SharedLayoutDemo />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/courses" element={<AvailableCoursesPage />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
