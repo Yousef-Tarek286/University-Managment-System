@@ -1,15 +1,77 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MainLayout from "../components/layout/MainLayout";
 import Card from "../components/layout/common/Card";
+import MaterialList from "../components/materials/MaterialList";
+import Modal from "../components/layout/common/Modal";
+import Button from "../components/layout/common/Button";
+import LoadingSpinner from "../components/layout/common/LoadingSpinner";
 import "./CourseDetailsPage.css";
 
 type TabKey = "materials" | "announcements" | "quizzes" | "participants";
 
 function CourseDetailsPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("materials");
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!uploadStatus) return;
+    const timer = setTimeout(() => setUploadStatus(null), 5000);
+    return () => clearTimeout(timer);
+  }, [uploadStatus]);
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+    setIsUploading(true);
+    setUploadStatus(null);
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      const res = await fetch("http://localhost:3000/api/courses/1/materials", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        setSelectedFile(null);
+        setIsUploadOpen(false);
+        setRefreshKey((k) => k + 1);
+        setUploadStatus({ type: "success", text: "Upload successful" });
+      } else {
+        setIsUploadOpen(false);
+        setUploadStatus({ type: "error", text: "Upload failed" });
+      }
+    } catch {
+      setIsUploadOpen(false);
+      setUploadStatus({ type: "error", text: "Upload failed" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <MainLayout role="STUDENT" username="Mohamed">
+      {uploadStatus && (
+        <div
+          className={`status-banner ${uploadStatus.type}`}
+        >
+          <div className="status-banner-content">
+            <span className="material-symbols-outlined">
+              {uploadStatus.type === "success" ? "check" : "close"}
+            </span>
+            <span>{uploadStatus.text}</span>
+          </div>
+          <div className="status-timer-bar" />
+        </div>
+      )}
+
       <div className="course-header">
         <h1>CS101 - Introduction to Computer Science</h1>
         <p>Instructor: Dr. Ahmed Hassan • Fall 2026</p>
@@ -50,9 +112,94 @@ function CourseDetailsPage() {
       </div>
 
       {activeTab === "materials" && (
-        <Card title="Course Materials">
-          <p>Lecture slides and PDFs will appear here.</p>
-        </Card>
+        <>
+          <div style={{ marginBottom: "16px" }}>
+            <Button variant="primary" onClick={() => setIsUploadOpen(true)}>
+              Upload Material
+            </Button>
+          </div>
+
+          <MaterialList courseId={1} refreshKey={refreshKey} />
+
+          <Modal
+            title="Upload Material"
+            isOpen={isUploadOpen}
+            onClose={() => setIsUploadOpen(false)}
+          >
+            <div className="upload-area">
+              <span
+                className="material-symbols-outlined"
+                style={{
+                  fontSize: "55px",
+                  color: "#2563eb",
+                  marginBottom: "12px",
+                }}
+              >
+                upload_file
+              </span>
+
+              <p>Select a PDF or PowerPoint file to share with your students.</p>
+
+              <label className="btn btn-secondary">
+                Choose File
+                <input
+                  type="file"
+                  accept=".pdf,.ppt,.pptx"
+                  style={{ display: "none" }}
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                />
+              </label>
+
+              {selectedFile && (
+                <div className="selected-file">
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-outlined"
+                      style={{
+                        fontSize: "28px",
+                        color: selectedFile.name.endsWith(".pdf")
+                          ? "#dc2626"
+                          : "#ea580c",
+                      }}
+                    >
+                      {selectedFile.name.endsWith(".pdf")
+                        ? "picture_as_pdf"
+                        : "slideshow"}
+                    </span>
+                    {selectedFile.name}
+                  </span>
+
+                  <Button
+                    variant="danger"
+                    onClick={() => setSelectedFile(null)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              )}
+
+              {isUploading && (
+                <div style={{ marginTop: "12px" }}>
+                  <LoadingSpinner message="Uploading..." />
+                </div>
+              )}
+
+              <Button
+                variant="primary"
+                onClick={handleUpload}
+                disabled={!selectedFile || isUploading}
+              >
+                {isUploading ? "Uploading..." : "Upload File"}
+              </Button>
+            </div>
+          </Modal>
+        </>
       )}
 
       {activeTab === "announcements" && (

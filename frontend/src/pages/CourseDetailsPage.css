@@ -41,3 +41,42 @@
   color: #2563eb;
   border-bottom-color: #2563eb;
 }
+
+.status-banner {
+  border-radius: 10px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.status-banner.success {
+  background-color: #16a34a;
+}
+
+.status-banner.error {
+  background-color: #dc2626;
+}
+
+.status-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+}
+
+.status-timer-bar {
+  height: 4px;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  animation: shrinkTimer 5s linear forwards;
+}
+
+@keyframes shrinkTimer {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}

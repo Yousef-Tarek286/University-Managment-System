@@ -7,6 +7,18 @@ import jwt from "jsonwebtoken";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SECRET_KEY,
+    {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+        },
+    }
+);
 
 import { PrismaClient } from "./generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -113,6 +125,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+const memoryUpload = multer({ storage: multer.memoryStorage() });
 
 app.post("/upload", upload.single("file"), (req, res) => {
     if (!req.file) {
@@ -124,6 +137,109 @@ app.post("/upload", upload.single("file"), (req, res) => {
         originalName: req.file.originalname,
         size: req.file.size,
     });
+});
+// 1. Upload a material to a course (Supabase Storage)
+app.post("/api/courses/:id/materials", memoryUpload.single("file"), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const courseId = Number(req.params.id);
+        const { title, description, uploadedById } = req.body;
+        const storagePath = `courses/${courseId}/${Date.now()}-${req.file.originalname}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from("materials")
+            .upload(storagePath, req.file.buffer, {
+                contentType: req.file.mimetype,
+            });
+
+        if (uploadError) {
+            console.error("Supabase upload error:", uploadError);
+            return res.status(500).json({ error: uploadError.message });
+        }
+
+        const material = await prisma.courseMaterial.create({
+            data: {
+                title: title || req.file.originalname,
+                description: description || null,
+                fileName: req.file.originalname,
+                filePath: storagePath,
+                fileType: req.file.mimetype,
+                fileSize: req.file.size,
+                courseId,
+                uploadedById: Number(uploadedById) || 1,
+            },
+        });
+
+        return res.status(201).json(material);
+    } catch (error) {
+        console.error("Upload material error:", error);
+        return res.status(500).json({ error: "Failed to upload material" });
+    }
+});
+
+// 2. Get all materials for a course
+app.get("/api/courses/:id/materials", async (req, res) => {
+    try {
+        const courseId = Number(req.params.id);
+        const materials = await prisma.courseMaterial.findMany({
+            where: { courseId },
+            orderBy: { createdAt: "desc" },
+        });
+        return res.status(200).json(materials);
+    } catch (error) {
+        console.error("Get materials error:", error);
+        return res.status(500).json({ error: "Failed to fetch materials" });
+    }
+});
+
+// 3. Download a material by ID
+app.get("/api/materials/:id/download", async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const material = await prisma.courseMaterial.findUnique({ where: { id } });
+
+        if (!material) {
+            return res.status(404).json({ error: "Material not found" });
+        }
+
+        const { data, error } = await supabase.storage
+            .from("materials")
+            .createSignedUrl(material.filePath, 60, {
+                download: material.fileName,
+            });
+
+        if (error || !data?.signedUrl) {
+            return res.status(500).json({ error: "Failed to generate download link" });
+        }
+
+        return res.redirect(data.signedUrl);
+    } catch (error) {
+        console.error("Download material error:", error);
+        return res.status(500).json({ error: "Failed to download material" });
+    }
+});
+
+// 4. Delete a material by ID
+app.delete("/api/materials/:id", async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const material = await prisma.courseMaterial.findUnique({ where: { id } });
+
+        if (!material) {
+            return res.status(404).json({ error: "Material not found" });
+        }
+
+        await supabase.storage.from("materials").remove([material.filePath]);
+        await prisma.courseMaterial.delete({ where: { id } });
+
+        return res.status(200).json({ message: "Material deleted" });
+    } catch (error) {
+        console.error("Delete material error:", error);
+        return res.status(500).json({ error: "Failed to delete material" });
+    }
 });
 
 // Start server
