@@ -7,12 +7,7 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 
-<<<<<<< HEAD
 import prisma from "./src/config/prisma.js";
-=======
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
->>>>>>> main
 import courseRoutes from "./src/routes/course.routes.js";
 import enrollmentRoutes from "./src/routes/enrollment.routes.js";
 import errorHandler from "./src/middleware/errorHandler.js";
