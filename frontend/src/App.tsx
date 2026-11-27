@@ -52,8 +52,26 @@ function App() {
 
   return (
     <MainLayout role="STUDENT" username="Mohamed">
-      <h1>Student Dashboard</h1>
-      <p>Welcome to your University Portal!</p>
+      <div
+        style={{
+          backgroundImage:
+            'linear-gradient(135deg, rgba(15, 23, 42, 0.55), rgba(37, 99, 235, 0.65)), url("https://www.magnific.com/free-photos-vectors/blue-color-background-css/7"), linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #0ea5e9 100%)',
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          borderRadius: "16px",
+          padding: "36px 32px",
+          marginBottom: "24px",
+          color: "#ffffff",
+          boxShadow: "0 10px 25px rgba(37, 99, 235, 0.2)",
+        }}
+      >
+        <h1 style={{ margin: "0 0 8px 0", fontSize: "32px", color: "#ffffff" }}>
+          Welcome, Mohamed
+        </h1>
+        <p style={{ margin: 0, fontSize: "16px", opacity: 0.9 }}>
+          Welcome to your University Portal!
+        </p>
+      </div>
 
       <div
         style={{
