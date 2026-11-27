@@ -1,12 +1,12 @@
 import MainLayout from "../components/layout/MainLayout";
 import Card from "../components/layout/common/Card";
 import AnnouncementFeed from "../components/announcements/AnnouncementFeed";
+import { useAuth } from "../context/AuthContext";
 
-interface StudentDashboardProps {
-  username?: string;
-}
+function StudentDashboard() {
+  const { user } = useAuth();
+  const username = user?.fullName || "Student";
 
-function StudentDashboard({ username = "Mohamed" }: StudentDashboardProps) {
   return (
     <MainLayout role="STUDENT" username={username}>
       <div
