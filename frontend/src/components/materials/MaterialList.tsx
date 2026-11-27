@@ -1,36 +1,44 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import Card from "../layout/common/Card";
-
-interface Material {
-  id: number;
-  title: string;
-  fileName: string;
-  fileSize: number;
-  createdAt: string;
-}
+import type { CourseMaterial } from "../../types/material";
+import {
+  deleteMaterial,
+  getCourseMaterials,
+  getMaterialDownloadUrl,
+} from "../../services/materialService";
 
 interface MaterialListProps {
   courseId: number;
   refreshKey?: number;
+  canManage?: boolean;
 }
 
-function MaterialList({ courseId, refreshKey = 0 }: MaterialListProps) {
-  const [materials, setMaterials] = useState<Material[]>([]);
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    return error.response?.data?.message || fallback;
+  }
+  return error instanceof Error ? error.message : fallback;
+}
+
+function MaterialList({
+  courseId,
+  refreshKey = 0,
+  canManage = false,
+}: MaterialListProps) {
+  const [materials, setMaterials] = useState<CourseMaterial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchMaterials = async () => {
       try {
         setLoading(true);
-        const res = await fetch(
-          `http://localhost:3000/api/courses/${courseId}/materials`
-        );
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setMaterials(data);
-        }
+        setError(null);
+        const data = await getCourseMaterials(courseId);
+        setMaterials(data);
       } catch (err) {
-        console.error("Failed to load materials:", err);
+        setError(getErrorMessage(err, "Failed to load course materials."));
       } finally {
         setLoading(false);
       }
@@ -39,20 +47,35 @@ function MaterialList({ courseId, refreshKey = 0 }: MaterialListProps) {
     fetchMaterials();
   }, [courseId, refreshKey]);
 
+  const handleDownload = async (materialId: number) => {
+    try {
+      setError(null);
+      const { downloadUrl } = await getMaterialDownloadUrl(materialId);
+      window.open(downloadUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to download material."));
+    }
+  };
+
   const handleDelete = async (id: number) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/materials/${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setMaterials((prev) => prev.filter((item) => item.id !== id));
-      }
+      setError(null);
+      await deleteMaterial(id);
+      setMaterials((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
-      console.error("Failed to delete material:", err);
+      setError(getErrorMessage(err, "Failed to delete material."));
     }
   };
 
   if (loading) return <p>Loading materials...</p>;
+
+  if (error) {
+    return (
+      <Card title="Course Materials">
+        <p style={{ color: "#dc2626", margin: 0 }}>{error}</p>
+      </Card>
+    );
+  }
 
   if (materials.length === 0) {
     return (
@@ -85,19 +108,22 @@ function MaterialList({ courseId, refreshKey = 0 }: MaterialListProps) {
             </div>
 
             <div style={{ display: "flex", gap: "8px" }}>
-              <a
-                href={`http://localhost:3000/api/materials/${item.id}/download`}
+              <button
+                type="button"
                 className="btn btn-primary"
-                style={{ textDecoration: "none" }}
+                onClick={() => handleDownload(item.id)}
               >
                 Download
-              </a>
-              <button
-                className="btn btn-danger"
-                onClick={() => handleDelete(item.id)}
-              >
-                Delete
               </button>
+              {canManage && (
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => handleDelete(item.id)}
+                >
+                  Delete
+                </button>
+              )}
             </div>
           </div>
         ))}

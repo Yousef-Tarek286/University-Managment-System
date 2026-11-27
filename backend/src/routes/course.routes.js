@@ -16,4 +16,7 @@ router.get("/semesters", courseController.getSemesters);
 // GET /api/courses
 router.get("/", courseController.getCourses);
 
+// GET /api/courses/:id
+router.get("/:id", courseController.getCourseById);
+
 export default router;

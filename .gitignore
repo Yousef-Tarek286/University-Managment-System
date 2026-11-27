@@ -31,3 +31,6 @@ temp/
 
 # Generated Prisma Client
 generated/
+
+# Local uploads
+backend/uploads/

@@ -1,8 +1,8 @@
 // =================================================================
 // services/api.ts — Shared Axios HTTP Client
 //
-// Centralizes the backend baseURL so we don't repeat
-// "http://localhost:3000/api" in every component or service.
+// Centralizes the backend baseURL and attaches the JWT token
+// from localStorage on every outgoing request.
 // =================================================================
 
 import axios from "axios";
@@ -12,6 +12,14 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export default api;

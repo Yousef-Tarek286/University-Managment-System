@@ -1,4 +1,4 @@
-const { createClient } = require("@supabase/supabase-js");
+import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -10,5 +10,5 @@ const supabase = createClient(
     },
   }
 );
-console.log("Supabase storage available:", !!supabase.storage);
-module.exports = supabase;
+
+export default supabase;

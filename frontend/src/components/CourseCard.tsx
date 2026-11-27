@@ -2,6 +2,7 @@
 // components/CourseCard.tsx — Polished Course Card
 // =================================================================
 
+import { Link } from "react-router-dom";
 import type { Course } from "../types/course";
 import "./CourseCard.css";
 
@@ -49,7 +50,14 @@ export function CourseCard({ course }: CourseCardProps) {
       </div>
 
       <div className="course-card-body">
-        <h2 className="course-title">{course.courseName}</h2>
+        <h2 className="course-title">
+          <Link
+            to={`/courses/${course.id}`}
+            style={{ color: "inherit", textDecoration: "none" }}
+          >
+            {course.courseName}
+          </Link>
+        </h2>
         <p className="course-description">
           {course.description || "No course description provided."}
         </p>
