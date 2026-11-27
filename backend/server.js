@@ -20,7 +20,7 @@ const supabase = createClient(
     }
 );
 
-import { PrismaClient } from "./generated/prisma/client.js";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import courseRoutes from "./src/routes/course.routes.js";
 
