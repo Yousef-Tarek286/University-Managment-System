@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>University Management System - Class Diagram</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      color: #1e293b;
+    }
+    .actions button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: 8px;
+      transition: background 0.2s;
+    }
+    .actions button:hover {
+      background: #1d4ed8;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+      border: 1px solid #e2e8f0;
+      overflow: auto;
+      text-align: center;
+      min-height: 500px;
+    }
+    #diagram-output {
+      display: inline-block;
+      min-width: 1000px;
+    }
+    #error-box {
+      color: #dc2626;
+      background: #fee2e2;
+      padding: 16px;
+      border-radius: 8px;
+      display: none;
+      text-align: left;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <h1>🎓 University Learning Management Portal — UML Class Diagram</h1>
+      <p style="margin: 4px 0 0 0; color: #64748b; font-size: 14px;">Formal Architectural Domain Model</p>
+    </div>
+    <div class="actions">
+      <button onclick="downloadSVG()">⬇️ Download as SVG</button>
+      <button onclick="window.print()">🖨️ Print / Save as PDF</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="error-box"></div>
+    <div id="diagram-output">Rendering diagram, please wait...</div>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose'
+    });
+
+    const diagramDefinition = `classDiagram
+    direction TB
+
+    class Role {
+        <<enumeration>>
+        STUDENT
+        DOCTOR
+        ADMIN
+    }
+
+    class CourseStatus {
+        <<enumeration>>
+        ACTIVE
+        ARCHIVED
+    }
+
+    class EnrollmentStatus {
+        <<enumeration>>
+        ENROLLED
+        DROPPED
+        COMPLETED
+    }
+
+    class QuizStatus {
+        <<enumeration>>
+        DRAFT
+        PUBLISHED
+        CLOSED
+    }
+
+    class QuestionType {
+        <<enumeration>>
+        MCQ
+        TRUE_FALSE
+    }
+
+    class AttemptStatus {
+        <<enumeration>>
+        IN_PROGRESS
+        SUBMITTED
+        GRADED
+    }
+
+    class User {
+        +Int id
+        +String fullName
+        +String email
+        +String passwordHash
+        +Role role
+        +Boolean isActive
+        +String department
+        +String studentNumber
+        +String employeeNumber
+        +DateTime createdAt
+        +DateTime updatedAt
+        +login(email, password) Boolean
+        +updateProfile(data) Boolean
+    }
+
+    class Semester {
+        +Int id
+        +String name
+        +DateTime startDate
+        +DateTime endDate
+        +Boolean isActive
+        +Boolean registrationOpen
+        +activate() void
+        +openRegistration() void
+    }
+
+    class Course {
+        +Int id
+        +String courseName
+        +String courseCode
+        +String description
+        +Int capacity
+        +CourseStatus status
+        +Int semesterId
+        +Int doctorId
+        +isFull() Boolean
+        +archive() void
+    }
+
+    class Enrollment {
+        +Int id
+        +Int studentId
+        +Int courseId
+        +EnrollmentStatus status
+        +DateTime enrollmentDate
+        +dropCourse() void
+    }
+
+    class CourseMaterial {
+        +Int id
+        +String title
+        +String description
+        +String fileName
+        +String filePath
+        +String fileType
+        +Int fileSize
+        +Int courseId
+        +Int uploadedById
+        +download() FileStream
+    }
+
+    class Announcement {
+        +Int id
+        +String title
+        +String content
+        +Int courseId
+        +Int createdById
+        +isSystemWide() Boolean
+    }
+
+    class Quiz {
+        +Int id
+        +String title
+        +String description
+        +Int durationMinutes
+        +Float totalMarks
+        +DateTime startDate
+        +DateTime endDate
+        +QuizStatus status
+        +Int courseId
+        +Int createdById
+        +publish() void
+        +isAvailable() Boolean
+    }
+
+    class Question {
+        +Int id
+        +Int quizId
+        +String questionText
+        +QuestionType questionType
+        +Float marks
+        +Int orderIndex
+    }
+
+    class QuestionOption {
+        +Int id
+        +Int questionId
+        +String optionText
+        +Boolean isCorrect
+    }
+
+    class QuizAttempt {
+        +Int id
+        +Int quizId
+        +Int studentId
+        +DateTime startedAt
+        +DateTime submittedAt
+        +Float score
+        +AttemptStatus status
+        +Boolean isReleased
+        +calculateScore() Float
+    }
+
+    class StudentAnswer {
+        +Int id
+        +Int attemptId
+        +Int questionId
+        +Int selectedOptionId
+        +String answerText
+        +Boolean isCorrect
+        +Float awardedMarks
+    }
+
+    class Notification {
+        +Int id
+        +Int userId
+        +String title
+        +String message
+        +String type
+        +Boolean isRead
+        +markAsRead() void
+    }
+
+    User "1" --> "0..*" Course : instructs
+    Semester "1" --> "0..*" Course : contains
+    User "1" --> "0..*" Enrollment : enrolls
+    Course "1" --> "0..*" Enrollment : receives
+    Course "1" *-- "0..*" CourseMaterial : contains
+    User "1" --> "0..*" CourseMaterial : uploads
+    Course "0..1" *-- "0..*" Announcement : belongs_to
+    User "1" --> "0..*" Announcement : posts
+    Course "1" *-- "0..*" Quiz : offers
+    User "1" --> "0..*" Quiz : authors
+    Quiz "1" *-- "1..*" Question : contains
+    Question "1" *-- "2..*" QuestionOption : has_options
+    Quiz "1" --> "0..*" QuizAttempt : tracks
+    User "1" --> "0..*" QuizAttempt : undertakes
+    QuizAttempt "1" *-- "1..*" StudentAnswer : records
+    Question "1" --> "0..*" StudentAnswer : answers
+    QuestionOption "0..1" --> "0..*" StudentAnswer : selects
+    User "1" *-- "0..*" Notification : receives`;
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const container = document.getElementById('diagram-output');
+      const errBox = document.getElementById('error-box');
+      try {
+        const { svg } = await mermaid.render('renderedDiagram', diagramDefinition);
+        container.innerHTML = svg;
+      } catch (err) {
+        container.style.display = 'none';
+        errBox.style.display = 'block';
+        errBox.textContent = 'Mermaid Render Error:\n' + (err.message || err);
+      }
+    });
+
+    function downloadSVG() {
+      const svg = document.querySelector("#diagram-output svg");
+      if (!svg) {
+        alert("Diagram is still rendering, please wait a second...");
+        return;
+      }
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+      downloadLink.href = url;
+      downloadLink.download = "university_portal_class_diagram.svg";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
+  </script>
+</body>
+</html>

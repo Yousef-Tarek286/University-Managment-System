@@ -1,12 +1,14 @@
 
+// Login route
+
 import express from "express";
 import cors from "cors";
 import "dotenv/config";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
-import { PrismaClient } from "./generated/prisma/client.ts";
+import { PrismaClient } from "./generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
-
-
 
 // Initialize Prisma
 const adapter = new PrismaPg({
@@ -31,44 +33,55 @@ app.get("/", (req, res) => {
 // Login route
 app.post("/api/auth/login", async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { email, password } = req.body;
 
-        // Check Admin table
-        let user = await prisma.admin.findUnique({
-            where: { username },
+        // Find user by email
+        const user = await prisma.user.findUnique({
+            where: { email },
         });
 
-        let role = "admin";
-
-        // Check Doctor table if not found
-        if (!user) {
-            user = await prisma.doctor.findUnique({
-                where: { username },
-            });
-
-            role = "doctor";
-        }
-
-        // Check Student table if not found
-        if (!user) {
-            user = await prisma.student.findUnique({
-                where: { username },
-            });
-
-            role = "student";
-        }
-
-        // Validate credentials
-        if (!user || user.password !== password) {
+        // Check if user exists and is active
+        if (!user || !user.isActive) {
             return res.status(401).json({
-                message: "Invalid username or password",
+                message: "Invalid email or password",
             });
         }
+
+        // Compare entered password with stored hash
+        const passwordMatches = await bcrypt.compare(
+            password,
+            user.passwordHash
+        );
+
+        if (!passwordMatches) {
+            return res.status(401).json({
+                message: "Invalid email or password",
+            });
+        }
+// Generate JWT token
+        const token = jwt.sign(
+            {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                fullName: user.fullName,
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: "1d",
+            }
+        );        
 
         // Successful login
         return res.status(200).json({
-            message: `Welcome ${user.name}`,
-            role: role,
+            message: `Welcome ${user.fullName}`,
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                fullName: user.fullName,
+            },
         });
 
     } catch (error) {
