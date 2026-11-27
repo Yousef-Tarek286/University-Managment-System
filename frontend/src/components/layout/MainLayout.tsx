@@ -22,15 +22,28 @@ function MainLayout({ role, username, children }: MainLayoutProps) {
   return (
     <div className="main-layout">
       <header className="navbar">
-        <button onClick={() => setSidebarOpen(!sidebarOpen)}>
-          ☰
-        </button>
+      <button
+  className="sidebar-toggle"
+  onClick={() => setSidebarOpen(!sidebarOpen)}
+  aria-label="Toggle sidebar"
+>
+  ☰
+</button>
 
-        <h2>University Portal</h2>
+<div className="brand">
+  <img
+    src="unilogo.png"
+    alt="University Logo"
+    className="university-logo"
+  />
+  
+</div>
 
         <div className="user-info">
           <span>{username}</span>
-          <button>Logout</button>
+         <button onClick={() => alert("Logout functionality will be connected later!")}>
+  Logout
+</button>
         </div>
       </header>
 
