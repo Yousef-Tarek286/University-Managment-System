@@ -1,0 +1,43 @@
+.card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  transition: all 0.25s ease;
+}
+
+/* Blue accent at the top */
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+}
+
+/* Hover animation */
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 25px rgba(15, 23, 42, 0.09);
+  border-color: #bfdbfe;
+}
+
+/* Card title */
+.card h3 {
+  margin: 0 0 16px;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Card content */
+.card-content {
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.6;
+}
