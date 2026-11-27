@@ -4,16 +4,16 @@
 // Mounted at /api/courses in server.js
 // =================================================================
 
-const express = require("express");
-const courseController = require("../controllers/course.controller");
+
+import express from "express";
+import courseController from "../controllers/course.controller.js";
 
 const router = express.Router();
 
-// GET /api/courses/semesters — list semesters for the filter dropdown
+// GET /api/courses/semesters
 router.get("/semesters", courseController.getSemesters);
 
-// GET /api/courses — list active courses (supports ?search= and ?semesterId=)
+// GET /api/courses
 router.get("/", courseController.getCourses);
 
-module.exports = router;
-
+export default router;
