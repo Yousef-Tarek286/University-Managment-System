@@ -7,9 +7,178 @@ datasource db {
   provider = "postgresql"
 }
 
-// -----------------------------------------------------------------
-// 1. ENUMS (Controlled Vocabularies)
-// -----------------------------------------------------------------
+model User {
+  id                Int              @id @default(autoincrement())
+  fullName          String
+  email             String           @unique
+  passwordHash      String
+  role              Role             @default(STUDENT)
+  isActive          Boolean          @default(true)
+  department        String?
+  studentNumber     String?          @unique
+  employeeNumber    String?          @unique
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  announcements     Announcement[]
+  taughtCourses     Course[]         @relation("DoctorAssignedCourses")
+  uploadedMaterials CourseMaterial[]
+  enrollments       Enrollment[]
+  notifications     Notification[]
+  createdQuizzes    Quiz[]
+  quizAttempts      QuizAttempt[]
+}
+
+model Semester {
+  id               Int      @id @default(autoincrement())
+  name             String
+  startDate        DateTime
+  endDate          DateTime
+  isActive         Boolean  @default(false)
+  registrationOpen Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  courses          Course[]
+}
+
+model Course {
+  id            Int              @id @default(autoincrement())
+  courseName    String
+  courseCode    String           @unique
+  description   String?
+  capacity      Int              @default(30)
+  status        CourseStatus     @default(ACTIVE)
+  semesterId    Int?
+  doctorId      Int?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  announcements Announcement[]
+  doctor        User?            @relation("DoctorAssignedCourses", fields: [doctorId], references: [id])
+  semester      Semester?        @relation(fields: [semesterId], references: [id])
+  materials     CourseMaterial[]
+  enrollments   Enrollment[]
+  quizzes       Quiz[]
+}
+
+model Enrollment {
+  id             Int              @id @default(autoincrement())
+  studentId      Int
+  courseId       Int
+  status         EnrollmentStatus @default(ENROLLED)
+  enrollmentDate DateTime         @default(now())
+  course         Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student        User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+}
+
+model CourseMaterial {
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String?
+  fileName     String
+  filePath     String
+  fileType     String
+  fileSize     Int
+  courseId     Int
+  uploadedById Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+}
+
+model Announcement {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String
+  courseId    Int?
+  createdById Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  course      Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model Quiz {
+  id              Int           @id @default(autoincrement())
+  title           String
+  description     String?
+  durationMinutes Int
+  totalMarks      Float         @default(100)
+  startDate       DateTime
+  endDate         DateTime
+  status          QuizStatus    @default(DRAFT)
+  courseId        Int
+  createdById     Int
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  questions       Question[]
+  course          Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy       User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  attempts        QuizAttempt[]
+}
+
+model Question {
+  id           Int              @id @default(autoincrement())
+  quizId       Int
+  questionText String
+  questionType QuestionType     @default(MCQ)
+  marks        Float            @default(1)
+  orderIndex   Int              @default(0)
+  quiz         Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options      QuestionOption[]
+  answers      StudentAnswer[]
+}
+
+model QuestionOption {
+  id                Int             @id @default(autoincrement())
+  questionId        Int
+  optionText        String
+  isCorrect         Boolean         @default(false)
+  question          Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedInAnswers StudentAnswer[]
+}
+
+model QuizAttempt {
+  id          Int             @id @default(autoincrement())
+  quizId      Int
+  studentId   Int
+  startedAt   DateTime        @default(now())
+  submittedAt DateTime?
+  score       Float?
+  status      AttemptStatus   @default(IN_PROGRESS)
+  isReleased  Boolean         @default(false)
+  quiz        Quiz            @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  student     User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers     StudentAnswer[]
+}
+
+model StudentAnswer {
+  id               Int             @id @default(autoincrement())
+  attemptId        Int
+  questionId       Int
+  selectedOptionId Int?
+  answerText       String?
+  isCorrect        Boolean         @default(false)
+  awardedMarks     Float           @default(0)
+  attempt          QuizAttempt     @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question         Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption   QuestionOption? @relation(fields: [selectedOptionId], references: [id])
+
+  @@unique([attemptId, questionId])
+}
+
+model Notification {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  title           String
+  message         String
+  type            String
+  relatedEntityId Int?
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 
 enum Role {
   STUDENT
@@ -43,237 +212,4 @@ enum AttemptStatus {
   IN_PROGRESS
   SUBMITTED
   GRADED
-}
-
-// -----------------------------------------------------------------
-// 2. USER MANAGEMENT & AUTHENTICATION 
-// -----------------------------------------------------------------
-
-model User {
-  id           Int      @id @default(autoincrement())
-  fullName     String
-  email        String   @unique
-  passwordHash String
-  role         Role     @default(STUDENT)
-  isActive     Boolean  @default(true)
-  department   String?
-  
-  // Role-specific identifiers (optional)
-  studentNumber  String? @unique
-  employeeNumber String? @unique
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relationships across the portal
-  taughtCourses     Course[]         @relation("DoctorAssignedCourses")
-  enrollments       Enrollment[]
-  uploadedMaterials CourseMaterial[]
-  announcements     Announcement[]
-  createdQuizzes    Quiz[]
-  quizAttempts      QuizAttempt[]
-  notifications     Notification[]
-}
-
-// -----------------------------------------------------------------
-// 3. ACADEMIC SEMESTER & COURSES 
-// -----------------------------------------------------------------
-
-model Semester {
-  id               Int      @id @default(autoincrement())
-  name             String   // e.g. "Fall 2026", "Spring 2027"
-  startDate        DateTime
-  endDate          DateTime
-  isActive         Boolean  @default(false)
-  registrationOpen Boolean  @default(false)
-
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  courses Course[]
-}
-
-model Course {
-  id          Int          @id @default(autoincrement())
-  courseName  String
-  courseCode  String       @unique // e.g. "CS101"
-  description String?
-  capacity    Int          @default(30)
-  status      CourseStatus @default(ACTIVE)
-
-  // A course belongs to a Semester
-  semesterId  Int?
-  semester    Semester?    @relation(fields: [semesterId], references: [id], onDelete: SetNull)
-
-  // A course has an assigned primary Doctor
-  doctorId    Int?
-  doctor      User?        @relation("DoctorAssignedCourses", fields: [doctorId], references: [id], onDelete: SetNull)
-
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  enrollments   Enrollment[]
-  materials     CourseMaterial[]
-  announcements Announcement[]
-  quizzes       Quiz[]
-}
-
-// -----------------------------------------------------------------
-// 4. STUDENT ENROLLMENT 
-// -----------------------------------------------------------------
-
-model Enrollment {
-  id             Int              @id @default(autoincrement())
-  studentId      Int
-  courseId       Int
-  status         EnrollmentStatus @default(ENROLLED)
-  enrollmentDate DateTime         @default(now())
-
-  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  // Enforces Business Rule 5.2: A student cannot register for the same course twice
-  @@unique([studentId, courseId])
-}
-
-// -----------------------------------------------------------------
-// 5. COURSE MATERIALS & ANNOUNCEMENTS 
-// -----------------------------------------------------------------
-
-model CourseMaterial {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String?
-  fileName    String
-  filePath    String
-  fileType    String
-  fileSize    Int
-  
-  courseId    Int
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  uploadedById Int
-  uploadedBy   User    @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Announcement {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String
-  
-  // If courseId is null, this is a system-wide announcement for all users
-  courseId  Int?
-  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  createdById Int
-  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// -----------------------------------------------------------------
-// 6. QUIZZES, QUESTIONS & GRADING
-// -----------------------------------------------------------------
-
-model Quiz {
-  id              Int        @id @default(autoincrement())
-  title           String
-  description     String?
-  durationMinutes Int
-  totalMarks      Float      @default(100)
-  startDate       DateTime
-  endDate         DateTime
-  status          QuizStatus @default(DRAFT)
-
-  courseId        Int
-  course          Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  createdById     Int
-  createdBy       User       @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-
-  questions Question[]
-  attempts  QuizAttempt[]
-}
-
-model Question {
-  id           Int          @id @default(autoincrement())
-  quizId       Int
-  questionText String
-  questionType QuestionType @default(MCQ)
-  marks        Float        @default(1)
-  orderIndex   Int          @default(0)
-
-  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-
-  options QuestionOption[]
-  answers StudentAnswer[]
-}
-
-model QuestionOption {
-  id         Int     @id @default(autoincrement())
-  questionId Int
-  optionText String
-  isCorrect  Boolean @default(false)
-
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-
-  selectedInAnswers StudentAnswer[]
-}
-
-model QuizAttempt {
-  id          Int           @id @default(autoincrement())
-  quizId      Int
-  studentId   Int
-  startedAt   DateTime      @default(now())
-  submittedAt DateTime?
-  score       Float?
-  status      AttemptStatus @default(IN_PROGRESS)
-  isReleased  Boolean       @default(false) // Doctors control when grades become visible
-
-  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  answers StudentAnswer[]
-}
-
-model StudentAnswer {
-  id               Int     @id @default(autoincrement())
-  attemptId        Int
-  questionId       Int
-  selectedOptionId Int?
-  answerText       String?
-  isCorrect        Boolean @default(false)
-  awardedMarks     Float   @default(0)
-
-  attempt        QuizAttempt     @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question       Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  selectedOption QuestionOption? @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
-
-  // Enforces that one attempt cannot have duplicate answers for the same question
-  @@unique([attemptId, questionId])
-}
-
-// -----------------------------------------------------------------
-// 7. NOTIFICATIONS (System Wide)
-// -----------------------------------------------------------------
-
-model Notification {
-  id              Int      @id @default(autoincrement())
-  userId          Int
-  title           String
-  message         String
-  type            String   // ANNOUNCEMENT, QUIZ, GRADE, SYSTEM
-  relatedEntityId Int?
-  isRead          Boolean  @default(false)
-
-  createdAt       DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
