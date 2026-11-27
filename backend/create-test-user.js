@@ -1,4 +1,5 @@
 
+
 import bcrypt from "bcrypt";
 import { PrismaClient } from "./generated/prisma/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -9,22 +10,57 @@ const adapter = new PrismaPg({
 });
 
 const prisma = new PrismaClient({ adapter });
-console.log("Prisma model names:", Object.keys(prisma));
-console.log("User model:", prisma.user);
 
 async function main() {
-    const hashedPassword = await bcrypt.hash("mypassword123", 10);
-
-    const user = await prisma.user.create({
-        data: {
+    const accounts = [
+        {
             email: "testadmin@university.com",
             fullName: "Test Admin",
-            passwordHash: hashedPassword,
+            password: "mypassword123",
             role: "ADMIN",
         },
-    });
+        {
+            email: "doctor@test.com",
+            fullName: "Test Doctor",
+            password: "Doctor123!",
+            role: "DOCTOR",
+            employeeNumber: "DOC-TEST-001",
+        },
+        {
+            email: "student@test.com",
+            fullName: "Test Student",
+            password: "Student123!",
+            role: "STUDENT",
+            studentNumber: "STU-TEST-001",
+        },
+    ];
 
-    console.log("Created user:", user.email);
+    for (const account of accounts) {
+        const hashedPassword = await bcrypt.hash(account.password, 10);
+
+        const user = await prisma.user.upsert({
+            where: { email: account.email },
+            update: {
+                fullName: account.fullName,
+                passwordHash: hashedPassword,
+                role: account.role,
+                isActive: true,
+                employeeNumber: account.employeeNumber ?? null,
+                studentNumber: account.studentNumber ?? null,
+            },
+            create: {
+                email: account.email,
+                fullName: account.fullName,
+                passwordHash: hashedPassword,
+                role: account.role,
+                isActive: true,
+                employeeNumber: account.employeeNumber ?? null,
+                studentNumber: account.studentNumber ?? null,
+            },
+        });
+
+        console.log(`Created/updated ${user.role}: ${user.email}`);
+    }
 }
 
 main()
