@@ -6,6 +6,8 @@ import MainLayout from "./components/layout/MainLayout";
 import Card from "./components/layout/common/Card";
 import LoadingSpinner from "./components/layout/common/LoadingSpinner";
 import CourseDetailsPage from "./pages/CourseDetailsPage";
+import StudentDashboard from "./pages/StudentDashboard";
+import DoctorDashboard from "./pages/DoctorDashboard";
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -50,7 +52,7 @@ function App() {
     }
   };
 
-  return <CourseDetailsPage />;
+  return <DoctorDashboard username="Dr. Ahmed" />;
 
   /*
   return (
