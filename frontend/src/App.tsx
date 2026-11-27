@@ -5,7 +5,7 @@ import Button from "./components/layout/common/Button";
 import MainLayout from "./components/layout/MainLayout";
 import Card from "./components/layout/common/Card";
 import LoadingSpinner from "./components/layout/common/LoadingSpinner";
-
+import CourseDetailsPage from "./pages/CourseDetailsPage";
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -50,6 +50,9 @@ function App() {
     }
   };
 
+  return <CourseDetailsPage />;
+
+  /*
   return (
     <MainLayout role="STUDENT" username="Mohamed">
       <div
@@ -212,6 +215,7 @@ function App() {
       </Modal>
     </MainLayout>
   );
+  */
 }
 
 export default App;
