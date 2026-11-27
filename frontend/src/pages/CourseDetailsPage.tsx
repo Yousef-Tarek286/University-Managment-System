@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import MainLayout from "../components/layout/MainLayout";
 import Card from "../components/layout/common/Card";
 import MaterialList from "../components/materials/MaterialList";
+import AnnouncementFeed from "../components/announcements/AnnouncementFeed";
 import Modal from "../components/layout/common/Modal";
 import Button from "../components/layout/common/Button";
 import LoadingSpinner from "../components/layout/common/LoadingSpinner";
@@ -15,6 +16,12 @@ function CourseDetailsPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+
+  const [isAnnounceOpen, setIsAnnounceOpen] = useState(false);
+  const [announceTitle, setAnnounceTitle] = useState("");
+  const [announceContent, setAnnounceContent] = useState("");
+  const [announceType, setAnnounceType] = useState<"general" | "important" | "quiz">("general");
+  const [announceRefreshKey, setAnnounceRefreshKey] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<{
     type: "success" | "error";
     text: string;
@@ -203,9 +210,102 @@ function CourseDetailsPage() {
       )}
 
       {activeTab === "announcements" && (
-        <Card title="Announcements">
-          <p>Course announcements will appear here.</p>
-        </Card>
+        <>
+          <div style={{ marginBottom: "16px" }}>
+            <Button variant="primary" onClick={() => setIsAnnounceOpen(true)}>
+              New Announcement
+            </Button>
+          </div>
+
+          <AnnouncementFeed courseId={1} refreshKey={announceRefreshKey} />
+
+          <Modal
+            title="New Announcement"
+            isOpen={isAnnounceOpen}
+            onClose={() => setIsAnnounceOpen(false)}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <select
+                value={announceType}
+                onChange={(e) =>
+                  setAnnounceType(
+                    e.target.value as "general" | "important" | "quiz"
+                  )
+                }
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "14px",
+                }}
+              >
+                <option value="general">General Announcement</option>
+                <option value="important">Important / Urgent</option>
+                <option value="quiz">Quiz / Exam</option>
+              </select>
+
+              <input
+                type="text"
+                placeholder="Announcement title"
+                value={announceTitle}
+                onChange={(e) => setAnnounceTitle(e.target.value)}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "14px",
+                }}
+              />
+              <textarea
+                placeholder="Write your announcement..."
+                rows={4}
+                value={announceContent}
+                onChange={(e) => setAnnounceContent(e.target.value)}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "14px",
+                  resize: "vertical",
+                }}
+              />
+              <Button
+                variant="primary"
+                disabled={!announceTitle.trim() || !announceContent.trim()}
+                onClick={async () => {
+                  const prefix =
+                    announceType === "important"
+                      ? "[Important] "
+                      : announceType === "quiz"
+                        ? "[Quiz] "
+                        : "";
+
+                  const res = await fetch(
+                    "http://localhost:3000/api/announcements",
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        title: `${prefix}${announceTitle}`,
+                        content: announceContent,
+                        courseId: 1,
+                      }),
+                    }
+                  );
+                  if (res.ok) {
+                    setAnnounceTitle("");
+                    setAnnounceContent("");
+                    setAnnounceType("general");
+                    setIsAnnounceOpen(false);
+                    setAnnounceRefreshKey((k) => k + 1);
+                  }
+                }}
+              >
+                Post Announcement
+              </Button>
+            </div>
+          </Modal>
+        </>
       )}
 
       {activeTab === "quizzes" && (

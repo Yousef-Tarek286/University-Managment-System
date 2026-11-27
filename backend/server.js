@@ -242,6 +242,69 @@ app.delete("/api/materials/:id", async (req, res) => {
     }
 });
 
+// 1. Create an announcement (course-specific or system-wide)
+app.post("/api/announcements", async (req, res) => {
+    try {
+        const { title, content, courseId, createdById } = req.body;
+
+        if (!title || !content) {
+            return res.status(400).json({ error: "Title and content are required" });
+        }
+
+        const announcement = await prisma.announcement.create({
+            data: {
+                title,
+                content,
+                courseId: courseId ? Number(courseId) : null,
+                createdById: Number(createdById) || 1,
+            },
+            include: {
+                createdBy: { select: { fullName: true, role: true } },
+            },
+        });
+
+        return res.status(201).json(announcement);
+    } catch (error) {
+        console.error("Create announcement error:", error);
+        return res.status(500).json({ error: "Failed to create announcement" });
+    }
+});
+
+// 2. Get announcements for a specific course
+app.get("/api/courses/:id/announcements", async (req, res) => {
+    try {
+        const courseId = Number(req.params.id);
+        const announcements = await prisma.announcement.findMany({
+            where: { courseId },
+            include: {
+                createdBy: { select: { fullName: true, role: true } },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+        return res.status(200).json(announcements);
+    } catch (error) {
+        console.error("Get course announcements error:", error);
+        return res.status(500).json({ error: "Failed to fetch announcements" });
+    }
+});
+
+// 3. Get announcements feed (system-wide + enrolled courses)
+app.get("/api/announcements/feed", async (req, res) => {
+    try {
+        const announcements = await prisma.announcement.findMany({
+            include: {
+                createdBy: { select: { fullName: true, role: true } },
+                course: { select: { code: true, name: true } },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+        return res.status(200).json(announcements);
+    } catch (error) {
+        console.error("Get announcements feed error:", error);
+        return res.status(500).json({ error: "Failed to fetch feed" });
+    }
+});
+
 // Start server
 app.listen(PORT, () => {
     console.log(`Backend running at http://localhost:${PORT}`);
