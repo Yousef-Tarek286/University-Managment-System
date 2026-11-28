@@ -32,6 +32,11 @@ export interface Course {
   semester: Semester | null;
 }
 
+export interface EnrolledCourse extends Course {
+  enrollmentId: number;
+  enrollmentDate: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
