@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import prisma from "./src/config/prisma.js";
 import courseRoutes from "./src/routes/course.routes.js";
 import materialRoutes from "./src/routes/material.routes.js";
+import enrollmentRoutes from "./src/routes/enrollment.routes.js";
 
 // Initialize Express
 const app = express();
@@ -83,9 +84,10 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// Course & Material routes
+// Course, Material & Enrollment routes
 app.use("/api/courses", courseRoutes);
 app.use("/api", materialRoutes);
+app.use("/api/enrollments", enrollmentRoutes);
 
 // 1. Create an announcement (course-specific or system-wide)
 app.post("/api/announcements", async (req, res) => {
